@@ -36,7 +36,7 @@
             <p>
 
               % if providers:
-                  ${_(u"Congratulations! You are eligible to receive course credit from {providers} for successfully completing your {platform_name} course! {link_start}Get your credit now.{link_end}").format(
+                  ${_(u"Congratulations! You are now eligible to receive course credit from {providers} for successfully completing your {platform_name} course! {link_start}Purchase credit now.{link_end}").format(
                     link_start=u'<a href="{dashboard_url}">'.format(
                         dashboard_url=dashboard_link
                     ),
@@ -45,7 +45,7 @@
                     providers=providers
                   )}
               % else:
-                  ${_(u"Congratulations! You are eligible to receive course credit for successfully completing your {platform_name} course! {link_start}Get your credit now.{link_end}").format(
+                  ${_(u"Congratulations! You are now eligible to receive course credit for successfully completing your {platform_name} course! {link_start}Purchase credit now.{link_end}").format(
                     link_start=u'<a href="{dashboard_url}">'.format(
                         dashboard_url=dashboard_link
                     ),
@@ -60,15 +60,24 @@
             </p>
 
             <p>
-              ${_(u'To get course credit, simply go to your {link_start}{platform_name} dashboard{link_end} and click the <b>Get Credit</b> button. After you receive your credit, you will also have an official academic transcript at the institution that granted the credit.').format(
+              ${_(u'There are 2 steps to getting course credit.')}
+          </p>
+          <p>
+            <ol>
+                <li>
+              ${_(u'Purchase credit by going to your {link_start}{platform_name} dashboard{link_end} and clicking the <b>Get Credit</b> button below the course title.').format(
                 link_start=u'<a href="{dashboard_url}">'.format(
                     dashboard_url=dashboard_link
                 ),
                 link_end=u'</a>',
                 platform_name=settings.PLATFORM_NAME
-              )}
+              )} 
+                </li>
+                <li>
+              ${_(u'When your payment is complete, return to the dashboard and click the <b>Request Credit</b> button under the course title to request an official academic transcript at the institution that granted the credit.')}
+                </li>
+             </ol>
             </p>
-
             <p>
               ${_(u"We hope you enjoyed the course, and we hope to see you in future {platform_name} courses!").format(platform_name=settings.PLATFORM_NAME)}<br/>
               ${_(u"The {platform_name} Team").format(platform_name=settings.PLATFORM_NAME)}
