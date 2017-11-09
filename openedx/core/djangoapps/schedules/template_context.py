@@ -100,9 +100,14 @@ class GoogleAnalyticsTrackingPixel(object):
                 parameter_name = attribute.metadata['param_name']
                 parameters[parameter_name] = str(value)
 
-        parameters['tid'] = self._get_value_from_settings("GOOGLE_ANALYTICS_TRACKING_ID")
-        if parameters['tid'] is None:
+        tracking_id = self._get_value_from_settings("GOOGLE_ANALYTICS_ACCOUNT")
+        if tracking_id is None:
+            tracking_id = self._get_value_from_settings("GOOGLE_ANALYTICS_TRACKING_ID")
+
+        if tracking_id is None:
             return None
+
+        parameters['tid'] = tracking_id
 
         user_id_dimension = self._get_value_from_settings("GOOGLE_ANALYTICS_USER_ID_CUSTOM_DIMENSION")
         if user_id_dimension is not None and self.user_id is not None:
