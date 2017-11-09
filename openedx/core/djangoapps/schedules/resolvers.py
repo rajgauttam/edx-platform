@@ -22,8 +22,8 @@ from openedx.core.djangoapps.schedules.models import Schedule, ScheduleExperienc
 from openedx.core.djangoapps.schedules.utils import PrefixedDebugLoggerMixin
 from openedx.core.djangoapps.schedules.template_context import (
     absolute_url,
-    get_base_template_context
-)
+    get_base_template_context,
+    GoogleAnalyticsTrackingPixel)
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 
 
@@ -182,11 +182,12 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
 
     def schedules_for_bin(self):
         schedules = self.get_schedules_with_target_date_by_bin_and_orgs()
-        template_context = get_base_template_context(self.site)
 
         for (user, user_schedules) in groupby(schedules, lambda s: s.enrollment.user):
             user_schedules = list(user_schedules)
             course_id_strs = [str(schedule.enrollment.course_id) for schedule in user_schedules]
+
+            template_context = get_base_template_context(self.site, user)
 
             # This is used by the bulk email optout policy
             template_context['course_ids'] = course_id_strs
@@ -245,11 +246,21 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
 
     def get_template_context(self, user, user_schedules):
         first_schedule = user_schedules[0]
+
+        pixel = GoogleAnalyticsTrackingPixel(
+            site=self.site,
+            user_id=user.id,
+            document_path='/email/schedules/nudge/{0}'.format(abs(self.day_offset)),
+        )
+        if len(user_schedules) == 1:
+            pixel.event_label = unicode(first_schedule.enrollment.course_id)
+
         context = {
             'course_name': first_schedule.enrollment.course.display_name,
             'course_url': absolute_url(
                 self.site, reverse('course_root', args=[str(first_schedule.enrollment.course_id)])
             ),
+            'ga_tracking_pixel_url': pixel.image_url,
         }
 
         # Information for including upsell messaging in template.
@@ -297,11 +308,20 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
             self.log_debug('No courses eligible for upgrade for user.')
             raise InvalidContextError()
 
+        pixel = GoogleAnalyticsTrackingPixel(
+            site=self.site,
+            user_id=user.id,
+            document_path='/email/schedules/upgrade_reminder',
+        )
+        if len(course_id_strs) == 1:
+            pixel.event_label = course_id_strs[0]
+
         context = {
             'course_links': course_links,
             'first_course_name': first_schedule.enrollment.course.display_name,
             'cert_image': absolute_url(self.site, static('course_experience/images/verified-cert.png')),
             'course_ids': course_id_strs,
+            'ga_tracking_pixel_url': pixel.image_url,
         }
         context.update(first_valid_upsell_context)
         return context
@@ -352,10 +372,11 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
             order_by='enrollment__course',
         )
 
-        template_context = get_base_template_context(self.site)
         for schedule in schedules:
             enrollment = schedule.enrollment
             user = enrollment.user
+
+            template_context = get_base_template_context(self.site)
 
             try:
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
@@ -363,6 +384,12 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 continue
 
             course_id_str = str(enrollment.course_id)
+            pixel = GoogleAnalyticsTrackingPixel(
+                site=self.site,
+                user_id=user.id,
+                event_label=course_id_str,
+                document_path='/email/schedules/course_update/{0}'.format(abs(self.day_offset)),
+            )
             template_context.update({
                 'course_name': schedule.enrollment.course.display_name,
                 'course_url': absolute_url(
@@ -373,6 +400,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
 
                 # This is used by the bulk email optout policy
                 'course_ids': [course_id_str],
+                'ga_tracking_pixel_url': pixel.image_url,
             })
             template_context.update(_get_upsell_information_for_schedule(user, schedule))
 

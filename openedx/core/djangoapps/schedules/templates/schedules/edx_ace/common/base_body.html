@@ -23,6 +23,10 @@
 {# Sailthru when the email is sent. Other email providers would need to replace this variable in the HTML as well. #}
 <img src="{beacon_src}" alt="" role="presentation" aria-hidden="true" />
 
+{% if ga_tracking_pixel_url %}
+<img src="{{ ga_tracking_pixel_url }}" alt="" role="presentation" aria-hidden="true" />
+{% endif %}
+
 <div bgcolor="#f5f5f5" lang="{{ LANGUAGE_CODE|default:"en" }}" dir="{{ LANGUAGE_BIDI|yesno:"rtl,ltr" }}" style="
     margin: 0;
     padding: 0;
