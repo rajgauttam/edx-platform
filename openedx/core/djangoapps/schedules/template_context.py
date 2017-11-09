@@ -19,8 +19,8 @@ def get_base_template_context(site, campaign=None):
         'template_revision': settings.EDX_PLATFORM_REVISION,
         'platform_name': settings.PLATFORM_NAME,
         'contact_mailing_address': settings.CONTACT_MAILING_ADDRESS,
-        'social_media_urls': encode_urls_in_dict(getattr(settings, 'SOCIAL_MEDIA_FOOTER_URLS', {}), campaign=campaign),
-        'mobile_store_urls': encode_urls_in_dict(getattr(settings, 'MOBILE_STORE_URLS', {}), campaign=campaign),
+        'social_media_urls': getattr(settings, 'SOCIAL_MEDIA_FOOTER_URLS', {}),
+        'mobile_store_urls': getattr(settings, 'MOBILE_STORE_URLS', {}),
     }
 
 
@@ -48,13 +48,6 @@ def absolute_url(site, relative_path, campaign=None):
     root = site.domain.rstrip('/')
     relative_path = relative_path.lstrip('/')
     return encode_url(u'https://{root}/{path}'.format(root=root, path=relative_path), campaign=campaign)
-
-
-def encode_urls_in_dict(mapping, campaign=None):
-    urls = {}
-    for key, value in mapping.iteritems():
-        urls[key] = encode_url(value, campaign=campaign)
-    return urls
 
 
 DEFAULT_CAMPAIGN_SOURCE = 'ace'
@@ -109,6 +102,8 @@ class GoogleAnalyticsTrackingPixel(object):
                 parameters[parameter_name] = str(value)
 
         parameters['tid'] = self._get_value_from_settings("GOOGLE_ANALYTICS_TRACKING_ID")
+        if parameters['tid'] is None:
+            return None
 
         user_id_dimension = self._get_value_from_settings("GOOGLE_ANALYTICS_USER_ID_CUSTOM_DIMENSION")
         if user_id_dimension is not None and self.user_id is not None:

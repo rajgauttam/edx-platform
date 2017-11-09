@@ -4,9 +4,9 @@
     {# email client support for style sheets is pretty spotty, so we have to inline all of these styles #}
     <a
     {% if course_ids|length > 1 %}
-        href="{{ dashboard_url }}"
+        href="{{ dashboard_url|safe }}"
     {% else %}
-        href="{{ course_url }}"
+        href="{{ course_url|safe }}"
     {% endif %}
     style="
         color: #ffffff;

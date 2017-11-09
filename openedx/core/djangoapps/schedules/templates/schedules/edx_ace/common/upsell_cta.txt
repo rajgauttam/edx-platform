@@ -4,6 +4,6 @@
     Don't miss the opportunity to highlight your new knowledge and skills by earning a verified
     certificate. Upgrade by {{ user_schedule_upgrade_deadline_time }}.
 
-    Upgrade Now! <{{ upsell_link }}>
+    Upgrade Now! <{{ upsell_link|safe }}>
 {% endblocktrans %}
 {% endif %}

@@ -6,13 +6,13 @@
     to have you! Come see what everyone is learning.
 {% endblocktrans %}
 
-{% trans "Start learning now" %} <{{ dashboard_url }}>
+{% trans "Start learning now" %} <{{ dashboard_url|safe }}>
 {% else %}
 {% blocktrans trimmed %}
     Remember when you enrolled in {{ course_name }} on edX.org? We do, and we’re glad
     to have you! Come see what everyone is learning.
 {% endblocktrans %}
 
-{% trans "Start learning now" %} <{{ course_url }}>
+{% trans "Start learning now" %} <{{ course_url|safe }}>
 {% endif %}
 {% include "schedules/edx_ace/common/upsell_cta.txt"%}

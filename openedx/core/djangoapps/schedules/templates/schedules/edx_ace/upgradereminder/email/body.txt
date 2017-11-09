@@ -11,11 +11,11 @@ Upgrade by {{ user_schedule_upgrade_deadline_time }}.
 
 {% if course_ids|length > 1 and course_ids|length < 10 %}
 {% for course_link in course_links %}
-* {{ course_link.name }} <{{ course_link.url }}>
+* {{ course_link.name }} <{{ course_link.url|safe }}>
 {% endfor %}
 {% endif %}
 
-{% trans "Upgrade now at" %} <{{ dashboard_url }}>
+{% trans "Upgrade now at" %} <{{ dashboard_url|safe }}>
 {% else %}
 {% blocktrans trimmed %}
 We hope you are enjoying learning with us so far in {{ first_course_name }}! A verified certificate
