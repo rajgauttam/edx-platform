@@ -188,9 +188,8 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
             user_schedules = list(user_schedules)
             course_id_strs = [str(schedule.enrollment.course_id) for schedule in user_schedules]
 
-            target_day = _get_datetime_beginning_of_day(self.target_datetime)
             campaign = CampaignTrackingInfo(
-                campaign='{0}_{1}'.format(self.tracking_name, target_day.isoformat())
+                campaign='{0}_{1}'.format(self.tracking_name, self.target_datetime.date().isoformat())
             )
             template_context = get_base_template_context(self.site, campaign=campaign)
 
@@ -385,9 +384,8 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
             enrollment = schedule.enrollment
             user = enrollment.user
 
-            target_day = _get_datetime_beginning_of_day(self.target_datetime)
             campaign = CampaignTrackingInfo(
-                campaign='course_update_{}'.format(target_day.isoformat())
+                campaign='course_update_{}'.format(self.target_datetime.date().isoformat())
             )
             template_context = get_base_template_context(self.site, campaign=campaign)
 
