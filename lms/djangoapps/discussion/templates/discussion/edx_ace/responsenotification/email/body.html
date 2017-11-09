@@ -1,9 +1,11 @@
+{% extends 'schedules/edx_ace/common/base_body.html' %}
+
 {% load i18n %}
 {% load static %}
 
 {% block preview_text %}
     {% blocktrans trimmed %}
-        Hi {{ thread_username }}
+        {{ comment_username }} replied to your thread.
     {% endblocktrans %}
 {% endblock %}
 
@@ -12,9 +14,9 @@
     <tr>
         <td>
             {% blocktrans trimmed %}
-                <h1>
+                <p>
                     Hi {{ thread_username }},
-                </h1>
+                </p>
 
                 <p>
                     {{ comment_username }} made the following reply to {{ thread_title }} at {{ comment_created_at }}.
@@ -23,40 +25,11 @@
                 <p>
                     {{ comment_body }}
                 </p>
-
-                <p>
-                    <a href="{{ post_link }}"> View the discussion.</a>
-                </p>
             {% endblocktrans %}
 
-            <p>
-                {# email client support for style sheets is pretty spotty, so we have to inline all of these styles #}
-                <a
-                    {% if course_ids|length == 1 %}
-                      href="{{ upsell_link }}"
-                    {% else %}
-                      href="{{ dashboard_url }}"
-                    {% endif %}
-                    style="
-                        color: #ffffff;
-                        text-decoration: none;
-                        border-radius: 4px;
-                        -webkit-border-radius: 4px;
-                        -moz-border-radius: 4px;
-                        background-color: #005686;
-                        border-top: 10px solid #005686;
-                        border-bottom: 10px solid #005686;
-                        border-right: 16px solid #005686;
-                        border-left: 16px solid #005686;
-                        display: inline-block;
-                ">
-                </a>
-            </p>
+            {% trans "View the discussion" as course_cta_text %}
+            {% include "schedules/edx_ace/common/return_to_course_cta.html" with course_cta_text=course_cta_text course_cta_url=post_link%}
         </td>
     </tr>
 </table>
-{% endblock %}
-
-{% block google_analytics_pixel %}
-<img src="{{ ga_tracking_pixel_url }}" alt="" role="presentation" aria-hidden="true" />
 {% endblock %}

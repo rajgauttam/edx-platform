@@ -25,14 +25,11 @@ def get_base_template_context(site, campaign=None):
 
 
 def encode_url(url, campaign=None):
-    # Sailthru has a bug where URLs that contain "+" characters in their path components are misinterpreted
-    # when GA instrumentation is enabled. We need to percent-encode the path segments of all URLs that are
-    # injected into our templates to work around this issue.
     parsed_url = urlparse(url)
     parsed_qs = parse_qs(parsed_url.query)
     if campaign is None:
         campaign = CampaignTrackingInfo()
-    modified_url = parsed_url._replace(path=urlquote(parsed_url.path), query=campaign.to_query_string(parsed_qs))
+    modified_url = parsed_url._replace(query=campaign.to_query_string(parsed_qs))
     return modified_url.geturl()
 
 
