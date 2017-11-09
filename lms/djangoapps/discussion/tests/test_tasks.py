@@ -8,7 +8,6 @@ import math
 from urlparse import urljoin
 
 import ddt
-from django.conf import settings
 from django.contrib.sites.models import Site
 import mock
 
@@ -16,9 +15,9 @@ from django_comment_common.models import ForumsConfig
 from django_comment_common.signals import comment_created
 from edx_ace.recipient import Recipient
 from lms.djangoapps.discussion.config.waffle import waffle, FORUM_RESPONSE_NOTIFICATIONS
-from lms.djangoapps.discussion.tasks import _generate_ga_pixel_url
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from openedx.core.djangoapps.schedules.template_context import get_base_template_context
+from openedx.core.djangoapps.schedules.template_context import get_base_template_context, GoogleAnalyticsTrackingPixel, \
+    absolute_url, CampaignTrackingInfo
 from student.tests.factories import CourseEnrollmentFactory, UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
@@ -128,6 +127,14 @@ class TaskTestCase(ModuleStoreTestCase):
 
             if user_subscribed:
                 expected_message_context = get_base_template_context(Site.objects.get_current())
+                campaign = CampaignTrackingInfo(source='discussions')
+                pixel = GoogleAnalyticsTrackingPixel(
+                    site=Site.objects.get_current(),
+                    user_id=self.thread_author.id,
+                    document_path='/email/discussions/thread/updated',
+                    event_label=unicode(self.course.id),
+                    campaign_source=campaign.source,
+                )
                 expected_message_context.update({
                     'comment_author_id': self.comment_author.id,
                     'comment_body': 'comment-body',
@@ -141,12 +148,12 @@ class TaskTestCase(ModuleStoreTestCase):
                     'thread_title': 'thread-title',
                     'thread_username': self.thread_author.username,
                     'thread_commentable_id': 'thread-commentable-id',
-                    'post_link': urljoin(Site.objects.get_current().domain, mock_permalink.return_value),
+                    'post_link': absolute_url(Site.objects.get_current(), mock_permalink.return_value, campaign),
                     'site': Site.objects.get_current(),
                     'site_id': Site.objects.get_current().id,
+                    'ga_tracking_pixel_url': pixel.image_url,
                 })
-                ga_tracking_pixel_url = _generate_ga_pixel_url(expected_message_context)
-                expected_message_context.update({'ga_tracking_pixel_url': ga_tracking_pixel_url})
+
                 expected_recipient = Recipient(self.thread_author.username, self.thread_author.email)
                 actual_message = mock_ace_send.call_args_list[0][0][0]
                 self.assertEqual(expected_message_context, actual_message.context)

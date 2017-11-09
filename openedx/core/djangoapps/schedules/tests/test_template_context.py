@@ -11,7 +11,7 @@ class TestTemplateContext(CacheIsolationTestCase):
 
     def test_absolute_url(self):
         absolute = absolute_url(self.site, '/foo/bar')
-        self.assertEqual(absolute, 'https://example.com/foo/bar')
+        self.assertEqual(absolute, 'https://example.com/foo/bar?utm_medium=email&utm_source=ace%27')
 
     def test_absolute_url_domain_lstrip(self):
         self.site.domain = 'example.com/'
