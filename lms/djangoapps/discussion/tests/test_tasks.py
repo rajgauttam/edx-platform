@@ -132,7 +132,7 @@ class TaskTestCase(ModuleStoreTestCase):
                     site=Site.objects.get_current(),
                     user_id=self.thread_author.id,
                     document_path='/email/discussions/thread/updated',
-                    event_label=unicode(self.course.id),
+                    course_id=self.course.id,
                     campaign_source=campaign.source,
                 )
                 expected_message_context.update({

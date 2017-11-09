@@ -72,6 +72,7 @@ class GoogleAnalyticsTrackingPixel(object):
     ANONYMOUS_USER_CLIENT_ID = 555
 
     site = attr.ib(default=None)
+    course_id = attr.ib(default=None)
 
     version = attr.ib(default=1, metadata={'param_name': 'v'})
     hit_type = attr.ib(default='event', metadata={'param_name': 't'})
@@ -87,12 +88,13 @@ class GoogleAnalyticsTrackingPixel(object):
     document_path = attr.ib(default=None, metadata={'param_name': 'dp'})
 
     user_id = attr.ib(default=None, metadata={'param_name': 'uid'})
-    client_id = attr.ib(default=None, metadata={'param_name': 'cid'})
+    client_id = attr.ib(default=ANONYMOUS_USER_CLIENT_ID, metadata={'param_name': 'cid'})
 
     @property
     def image_url(self):
         parameters = {}
-        for attribute in attr.fields(self.__class__):
+        fields = attr.fields(self.__class__)
+        for attribute in fields:
             value = getattr(self, attribute.name, None)
             if value is not None and 'param_name' in attribute.metadata:
                 parameter_name = attribute.metadata['param_name']
@@ -107,8 +109,9 @@ class GoogleAnalyticsTrackingPixel(object):
             parameter_name = 'cd{0}'.format(user_id_dimension)
             parameters[parameter_name] = self.user_id
 
-        if self.user_id is None and self.client_id is None:
-            parameters['cid'] = self.ANONYMOUS_USER_CLIENT_ID
+        if self.course_id is not None and self.event_label is None:
+            param_name = fields.event_label.metadata['param_name']
+            parameters[param_name] = unicode(self.course_id)
 
         return u"https://www.google-analytics.com/collect?{params}".format(params=urlencode(parameters))
 

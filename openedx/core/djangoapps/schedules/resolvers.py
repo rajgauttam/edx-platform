@@ -258,7 +258,7 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
             document_path='/email/schedules/{0}/{1}'.format(self.tracking_name, abs(self.day_offset)),
         )
         if len(user_schedules) == 1:
-            pixel.event_label = unicode(first_schedule.enrollment.course_id)
+            pixel.course_id = first_schedule.enrollment.course_id
 
         context = {
             'course_name': first_schedule.enrollment.course.display_name,
@@ -322,7 +322,7 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
             document_path='/email/schedules/' + self.tracking_name,
         )
         if len(course_id_strs) == 1:
-            pixel.event_label = course_id_strs[0]
+            pixel.course_id = course_id_strs[0]
 
         context = {
             'course_links': course_links,
@@ -398,7 +398,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
             pixel = GoogleAnalyticsTrackingPixel(
                 site=self.site,
                 user_id=user.id,
-                event_label=course_id_str,
+                course_id=course_id_str,
                 document_path='/email/schedules/course_update/{0}'.format(abs(self.day_offset)),
             )
             template_context.update({

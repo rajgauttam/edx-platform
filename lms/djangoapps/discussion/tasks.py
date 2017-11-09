@@ -89,7 +89,7 @@ def _build_message_context(context, thread_author, campaign):
         site=context['site'],
         user_id=thread_author.id,
         document_path='/email/discussions/thread/updated',
-        event_label=context['course_id'],
+        course_id=context['course_id'],
         campaign_source=campaign.source,
     )
     message_context['ga_tracking_pixel_url'] = pixel.image_url
