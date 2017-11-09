@@ -33,9 +33,7 @@ ROUTING_KEY = getattr(settings, 'ACE_ROUTING_KEY', None)
 
 
 class ResponseNotification(MessageType):
-    def __init__(self, *args, **kwargs):
-        super(ResponseNotification, self).__init__(*args, **kwargs)
-        self.name = 'response_notification'
+    pass
 
 
 @task(base=LoggedTask, routing_key=ROUTING_KEY)
