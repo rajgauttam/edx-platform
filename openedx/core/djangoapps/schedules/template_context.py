@@ -1,4 +1,4 @@
-from urlparse import urlparse
+from urlparse import urlparse, parse_qs
 
 import attr
 from django.conf import settings
@@ -10,30 +10,33 @@ from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from openedx.core.djangoapps.theming.helpers import get_current_site
 
 
-def get_base_template_context(site):
+def get_base_template_context(site, campaign=None):
     """Dict with entries needed for all templates that use the base template"""
     return {
         # Platform information
-        'homepage_url': encode_url(marketing_link('ROOT')),
-        'dashboard_url': absolute_url(site, reverse('dashboard')),
+        'homepage_url': encode_url(marketing_link('ROOT'), campaign=campaign),
+        'dashboard_url': absolute_url(site, reverse('dashboard'), campaign=campaign),
         'template_revision': settings.EDX_PLATFORM_REVISION,
         'platform_name': settings.PLATFORM_NAME,
         'contact_mailing_address': settings.CONTACT_MAILING_ADDRESS,
-        'social_media_urls': encode_urls_in_dict(getattr(settings, 'SOCIAL_MEDIA_FOOTER_URLS', {})),
-        'mobile_store_urls': encode_urls_in_dict(getattr(settings, 'MOBILE_STORE_URLS', {})),
+        'social_media_urls': encode_urls_in_dict(getattr(settings, 'SOCIAL_MEDIA_FOOTER_URLS', {}), campaign=campaign),
+        'mobile_store_urls': encode_urls_in_dict(getattr(settings, 'MOBILE_STORE_URLS', {}), campaign=campaign),
     }
 
 
-def encode_url(url):
+def encode_url(url, campaign=None):
     # Sailthru has a bug where URLs that contain "+" characters in their path components are misinterpreted
     # when GA instrumentation is enabled. We need to percent-encode the path segments of all URLs that are
     # injected into our templates to work around this issue.
     parsed_url = urlparse(url)
-    modified_url = parsed_url._replace(path=urlquote(parsed_url.path))
+    parsed_qs = parse_qs(parsed_url.query)
+    if campaign is None:
+        campaign = CampaignTrackingInfo()
+    modified_url = parsed_url._replace(path=urlquote(parsed_url.path), query=campaign.to_query_string(parsed_qs))
     return modified_url.geturl()
 
 
-def absolute_url(site, relative_path):
+def absolute_url(site, relative_path, campaign=None):
     """
     Add site.domain to the beginning of the given relative path.
 
@@ -44,14 +47,34 @@ def absolute_url(site, relative_path):
         return relative_path
     root = site.domain.rstrip('/')
     relative_path = relative_path.lstrip('/')
-    return encode_url(u'https://{root}/{path}'.format(root=root, path=relative_path))
+    return encode_url(u'https://{root}/{path}'.format(root=root, path=relative_path), campaign=campaign)
 
 
-def encode_urls_in_dict(mapping):
+def encode_urls_in_dict(mapping, campaign=None):
     urls = {}
     for key, value in mapping.iteritems():
-        urls[key] = encode_url(value)
+        urls[key] = encode_url(value, campaign=campaign)
     return urls
+
+
+DEFAULT_CAMPAIGN_SOURCE = 'ace'
+DEFAULT_CAMPAIGN_MEDIUM = 'email'
+
+
+@attr.s(frozen=True)
+class CampaignTrackingInfo(object):
+    source = attr.ib(default=DEFAULT_CAMPAIGN_SOURCE)
+    medium = attr.ib(default=DEFAULT_CAMPAIGN_MEDIUM)
+    campaign = attr.ib(default=None)
+    term = attr.ib(default=None)
+    content = attr.ib(default=None)
+
+    def to_query_string(self, existing_parameters=None):
+        new_parameters = dict(existing_parameters or {})
+        for attribute, value in attr.asdict(self).iteritems():
+            if value is not None:
+                new_parameters['utm_' + attribute] = value
+        return urlencode(new_parameters)
 
 
 @attr.s
@@ -63,8 +86,8 @@ class GoogleAnalyticsTrackingPixel(object):
     version = attr.ib(default=1, metadata={'param_name': 'v'})
     hit_type = attr.ib(default='event', metadata={'param_name': 't'})
 
-    campaign_source = attr.ib(default='ace', metadata={'param_name': 'cs'})
-    campaign_medium = attr.ib(default='email', metadata={'param_name': 'cm'})
+    campaign_source = attr.ib(default=DEFAULT_CAMPAIGN_SOURCE, metadata={'param_name': 'cs'})
+    campaign_medium = attr.ib(default=DEFAULT_CAMPAIGN_MEDIUM, metadata={'param_name': 'cm'})
     campaign_name = attr.ib(default=None, metadata={'param_name': 'cn'})
 
     event_category = attr.ib(default='email', metadata={'param_name': 'ec'})

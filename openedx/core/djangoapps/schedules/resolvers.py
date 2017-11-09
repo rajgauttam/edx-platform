@@ -23,7 +23,7 @@ from openedx.core.djangoapps.schedules.utils import PrefixedDebugLoggerMixin
 from openedx.core.djangoapps.schedules.template_context import (
     absolute_url,
     get_base_template_context,
-    GoogleAnalyticsTrackingPixel)
+    GoogleAnalyticsTrackingPixel, CampaignTrackingInfo)
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 
 
@@ -76,6 +76,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
     num_bins = DEFAULT_NUM_BINS
     experience_filter = (Q(experience__experience_type=ScheduleExperience.EXPERIENCES.default)
                          | Q(experience__isnull=True))
+    tracking_name = 'scheduled_email'
 
     def __attrs_post_init__(self):
         # TODO: in the next refactor of this task, pass in current_datetime instead of reproducing it here
@@ -187,20 +188,24 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
             user_schedules = list(user_schedules)
             course_id_strs = [str(schedule.enrollment.course_id) for schedule in user_schedules]
 
-            template_context = get_base_template_context(self.site, user)
+            target_day = _get_datetime_beginning_of_day(self.target_datetime)
+            campaign = CampaignTrackingInfo(
+                campaign='{0}_{1}'.format(self.tracking_name, target_day.isoformat())
+            )
+            template_context = get_base_template_context(self.site, campaign=campaign)
 
             # This is used by the bulk email optout policy
             template_context['course_ids'] = course_id_strs
 
             first_schedule = user_schedules[0]
             try:
-                template_context.update(self.get_template_context(user, user_schedules))
+                template_context.update(self.get_template_context(user, user_schedules, campaign))
             except InvalidContextError:
                 continue
 
             yield (user, first_schedule.enrollment.course.language, template_context)
 
-    def get_template_context(self, user, user_schedules):
+    def get_template_context(self, user, user_schedules, campaign):
         """
         Given a user and their schedules, build the context needed to render the template for this message.
 
@@ -235,6 +240,7 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
     log_prefix = 'Recurring Nudge'
     schedule_date_field = 'start'
     num_bins = RECURRING_NUDGE_NUM_BINS
+    tracking_name = 'nudge'
 
     @property
     def experience_filter(self):
@@ -244,13 +250,13 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
         else:
             return Q(experience__experience_type=ScheduleExperience.EXPERIENCES.default) | Q(experience__isnull=True)
 
-    def get_template_context(self, user, user_schedules):
+    def get_template_context(self, user, user_schedules, campaign):
         first_schedule = user_schedules[0]
 
         pixel = GoogleAnalyticsTrackingPixel(
             site=self.site,
             user_id=user.id,
-            document_path='/email/schedules/nudge/{0}'.format(abs(self.day_offset)),
+            document_path='/email/schedules/{0}/{1}'.format(self.tracking_name, abs(self.day_offset)),
         )
         if len(user_schedules) == 1:
             pixel.event_label = unicode(first_schedule.enrollment.course_id)
@@ -258,7 +264,9 @@ class RecurringNudgeResolver(BinnedSchedulesBaseResolver):
         context = {
             'course_name': first_schedule.enrollment.course.display_name,
             'course_url': absolute_url(
-                self.site, reverse('course_root', args=[str(first_schedule.enrollment.course_id)])
+                self.site,
+                reverse('course_root', args=[str(first_schedule.enrollment.course_id)]),
+                campaign=campaign
             ),
             'ga_tracking_pixel_url': pixel.image_url,
         }
@@ -283,8 +291,9 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
     log_prefix = 'Upgrade Reminder'
     schedule_date_field = 'upgrade_deadline'
     num_bins = UPGRADE_REMINDER_NUM_BINS
+    tracking_name = 'upgrade_reminder'
 
-    def get_template_context(self, user, user_schedules):
+    def get_template_context(self, user, user_schedules, campaign):
         course_id_strs = []
         course_links = []
         first_valid_upsell_context = None
@@ -300,7 +309,7 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
             course_id_str = str(schedule.enrollment.course_id)
             course_id_strs.append(course_id_str)
             course_links.append({
-                'url': absolute_url(self.site, reverse('course_root', args=[course_id_str])),
+                'url': absolute_url(self.site, reverse('course_root', args=[course_id_str]), campaign=campaign),
                 'name': schedule.enrollment.course.display_name
             })
 
@@ -311,7 +320,7 @@ class UpgradeReminderResolver(BinnedSchedulesBaseResolver):
         pixel = GoogleAnalyticsTrackingPixel(
             site=self.site,
             user_id=user.id,
-            document_path='/email/schedules/upgrade_reminder',
+            document_path='/email/schedules/' + self.tracking_name,
         )
         if len(course_id_strs) == 1:
             pixel.event_label = course_id_strs[0]
@@ -376,7 +385,11 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
             enrollment = schedule.enrollment
             user = enrollment.user
 
-            template_context = get_base_template_context(self.site)
+            target_day = _get_datetime_beginning_of_day(self.target_datetime)
+            campaign = CampaignTrackingInfo(
+                campaign='course_update_{}'.format(target_day.isoformat())
+            )
+            template_context = get_base_template_context(self.site, campaign=campaign)
 
             try:
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
