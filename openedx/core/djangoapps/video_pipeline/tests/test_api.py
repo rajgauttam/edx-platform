@@ -22,6 +22,7 @@ class TestAPIUtils(VideoPipelineIntegrationMixin, TestCase):
     def setUp(self):
         self.pipeline_integration = self.create_video_pipeline_integration()
         self.user = UserFactory(username=self.pipeline_integration.service_username)
+        self.oauth_client = self.create_video_pipeline_oauth_client(user=self.user)
 
     def test_update_transcription_service_credentials_with_integration_disabled(self):
         """
