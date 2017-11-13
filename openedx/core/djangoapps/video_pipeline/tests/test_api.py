@@ -42,6 +42,15 @@ class TestAPIUtils(VideoPipelineIntegrationMixin, TestCase):
         __, is_updated = update_3rd_party_transcription_service_credentials()
         self.assertFalse(is_updated)
 
+    def test_update_transcription_service_credentials_with_unknown_oauth_client(self):
+        """
+        Test updating the credentials when expected oauth cleint is not present.
+        """
+        self.pipeline_integration.client_name = 'non_existent_client'
+        self.pipeline_integration.save()
+        __, is_updated = update_3rd_party_transcription_service_credentials()
+        self.assertFalse(is_updated)
+
     @ddt.data(
         {
             'username': 'Jason_cielo_24',
