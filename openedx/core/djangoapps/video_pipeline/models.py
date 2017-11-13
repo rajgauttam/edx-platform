@@ -11,6 +11,14 @@ class VideoPipelineIntegration(ConfigurationModel):
     """
     Manages configuration for connecting to the edx-video-pipeline service and using its API.
     """
+    client_name = models.CharField(
+        max_length=100,
+        default='VEDA-Prod',
+        null=False,
+        blank=False,
+        help_text=_('Oauth client name of video pipeline service.')
+    )
+
     api_url = models.URLField(
         verbose_name=_('Internal API URL'),
         help_text=_('edx-video-pipeline API URL.')
